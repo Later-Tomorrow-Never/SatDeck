@@ -1,0 +1,11 @@
+import { OrbitControls } from './OrbitControls.js';
+
+export function Orbit(camera,Renderer){
+    const orbitcontrols = new OrbitControls(camera,Renderer.domElement);
+    orbitcontrols.maxDistance=40;
+    orbitcontrols.minDistance=1.3;
+    orbitcontrols.enableDamping=true;
+    orbitcontrols.enablePan=false;
+    orbitcontrols.zoomSpeed =0.8;
+    return orbitcontrols;
+}
