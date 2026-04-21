@@ -13,6 +13,7 @@ const IconPlay = document.getElementById('IconPlay');
 const imgPlay = '../../../images/start.png';
 const imgPause = '../../../images/pause.png'
 const earthLoader = document.getElementById('earth_loader');
+const networkContainer = document.getElementById('myNetwork');
 
 export function CreateSatelliteMarker() {
     const size = 64;
@@ -55,14 +56,56 @@ let positionsData = [];
 async function load_data() {
     try {
         earthLoader.classList.remove('hidden');
-        const response = await fetch(`http://localhost:8000/api/sat_pos?sat_id=${sat_id}`);
-        const result = await response.json();
+        let response = await fetch(`http://localhost:8000/api/sat_pos?sat_id=${sat_id}`);
+        let result = await response.json();
 
         if (!result.success) {
-            console.error('获取数据失败:', result.error);
+            console.error('获取pos数据失败:', result.error);
             return;
         }
         positionsData = result.data;
+
+        response = await fetch(`http://localhost:8000/api/network?slot_id=${cur_slot}`);
+        result = await response.json();
+        if (!result.success) {
+            console.error('获取network数据失败:', result.error);
+            return;
+        }
+        let nodes = new vis.DataSet(
+            result.nodes.map(n => ({ id: n.id, label: n.name, title: '' }))
+        );
+        let edges = new vis.DataSet(
+            result.edges.map(e => ({ from: e.from, to: e.to, label: e.rate.toFixed(2) + 'Mbps', value: e.rate }))
+        );
+        let data = { nodes: nodes, edges: edges };
+        var options = {
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                font: { size: 12, color: 'white' }
+            },
+            edges: {
+                arrows: { to: true },
+                font: { size: 12, color: 'white' }
+            },
+            physics: {
+                solver: 'barnesHut',
+                barnesHut: {
+                    gravitationalConstant: -8000,  // 增大负值，斥力更强
+                    centralGravity: 0.1,           // 减小中心引力
+                    springLength: 200,              // 弹簧长度
+                    springConstant: 0.04,           // 弹簧常数
+                    damping: 0.09,
+                    avoidOverlap: 0.5              // 避免重叠（0-1之间）
+                },
+                stabilization: { iterations: 500 }
+            },
+            interaction: { hover: true }
+        };
+
+        new vis.Network(networkContainer, data, options);
+
+
         earthLoader.classList.add('hidden');
     } catch (error) {
         console.error('请求失败:', error);
@@ -103,10 +146,9 @@ export async function startAnimation() {
         clearInterval(animationInterval);
         animationInterval = null;
     }
-    let i = cur_slot;
 
     function playNext() {
-        if (i >= positionsData.length) {
+        if (cur_slot >= positionsData.length) {
             // 播放完成，自动暂停
             console.log('播放完成，自动暂停');
             stopAnimation();
@@ -114,10 +156,9 @@ export async function startAnimation() {
             return;
         }
 
-        updateSatellitePosition(i);
-        console.log(`playing ${i}`)
-        i++;
-        cur_slot = i;  // 记录当前进度
+        updateSatellitePosition(cur_slot);
+        console.log(`playing ${cur_slot}`)
+        cur_slot++;
     }
 
     // 立即播放第一帧

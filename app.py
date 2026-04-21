@@ -108,7 +108,7 @@ def get_sat_pos():
         cursor.execute(f'select eci_x,eci_y,eci_z,slot_id from sat_positions where sat_id={sat_id} order by slot_id')
         for row in cursor.fetchall():
             cursor2 = conn.cursor()
-            cursor2.execute(f'select timestamp from sat_slots where slot_id={row[3]}')
+            cursor2.execute(f'select timestamp from sat_slots where slot_id={row[3]} limit 1')
             tmp = cursor2.fetchone()
             d.append({'eci_x':row[0],'eci_y':row[1],'eci_z':row[2],'time':tmp[0]})
         return jsonify({'success':True,'data':d})
@@ -117,6 +117,48 @@ def get_sat_pos():
         import traceback
         traceback.print_exc()  # 打印完整堆栈
         return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
+@app.route('/api/network',methods = ['GET'])
+def get_network():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        slot_id = request.args.get('slot_id',0)
+        d = []
+        cursor.execute(f'select * from links where slot_id = {slot_id}')
+        nodes_set = set()
+        edges = []
+        nodes = []
+        for row in cursor.fetchall():
+            link = {
+                'from':row['src'],
+                'to':row['dst'],
+                'rate':row['bandwidth_mbps']
+            }
+            nodes_set.add(row['src'])
+            nodes_set.add(row['dst'])
+            if row['state']=='up': edges.append(link) 
+
+        for node_id in nodes_set:
+            cursor.execute(f'select name from sat_positions where sat_id = {node_id} limit 1')
+            name = cursor.fetchone()
+            nodes.append({'id':node_id,'name':name[0]})
+        
+
+
+        conn.close()
+
+        return jsonify({
+            'success':True,
+            'nodes':nodes,
+            'edges':edges
+        })
+    except Exception as e:
+        print(f"错误信息: {e}")  # 打印到控制台
+        import traceback
+        traceback.print_exc()  # 打印完整堆栈
+        return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)

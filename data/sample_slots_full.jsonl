@@ -1,0 +1,3 @@
+{"slot_id": 0, "timestamp": "2026-02-26T12:14:30.477408Z", "links": [{"src": 0, "dst": 1, "state": "down"},{"src": 0, "dst": 2, "state": "up", "delay_ms": 4.187425, "bandwidth_mbps": 179.703128, "loss_rate": 0.001}, {"src": 1, "dst": 2, "state": "down"}]}
+{"slot_id": 1, "timestamp": "2026-02-26T12:14:31.477408Z", "links": [{"src": 0, "dst": 1, "state": "down"},{"src": 0, "dst": 2, "state": "up", "delay_ms": 4.187425, "bandwidth_mbps": 179.703128, "loss_rate": 0.001}, {"src": 1, "dst": 2, "state": "down"}]}
+{"slot_id": 2, "timestamp": "2026-02-26T12:14:32.477408Z", "links": [{"src": 0, "dst": 1, "state": "down"},{"src": 0, "dst": 2, "state": "up", "delay_ms": 4.187425, "bandwidth_mbps": 179.703128, "loss_rate": 0.001}, {"src": 1, "dst": 2, "state": "down"}]}

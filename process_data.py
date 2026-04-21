@@ -2,13 +2,17 @@ import sqlite3
 import json
 import os
 from datetime import datetime
+import time
 
-
+##################  检测下面的路径  ######################
 #sat_positions_jsonl = './data/sample_sat_positions.jsonl'
 sat_positions_jsonl = './data/sat_positions.jsonl'
-if not os.path.exists(sat_positions_jsonl):
-    print(f'{sat_positions_jsonl} not found')
-    exit()
+#links_jsonl = './data/sample_slots_full.jsonl'
+links_jsonl = './data/slots_full.jsonl'
+
+
+
+
 conn = sqlite3.connect('data.db')
 cursor = conn.cursor()
 
@@ -38,12 +42,32 @@ cursor.execute('''
     )
 ''')
 
+
+
+
+
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slot_id INTEGER NOT NULL,
+        timestamp TEXT NOT NULL,
+        state TEXT NOT NULL,
+        src INTEGER NOT NULL,
+        dst INTEGER NOT NULL,
+        bandwidth_mbps REAL
+    )
+''')
+
+
 # 3. 创建索引
 # 索引的作用：加速 WHERE 条件查询，例如 WHERE slot_id = 5 会非常快。
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_slot_id ON sat_slots(slot_id)')
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_pos_slot_id ON sat_positions(slot_id)')
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_sat_id ON sat_positions(sat_id)')
+cursor.execute("CREATE INDEX IF NOT EXISTS idx_slot_time ON links(slot_id)")
 
+conn.commit()
 
 #################  导入数据  ######################
 
@@ -84,7 +108,7 @@ def flush_batch():
         raise
 
 
-
+print('loading sat positions...\n')
 with open(sat_positions_jsonl,'r',encoding='utf-8') as f:
     line_cnt = 0
     for line in f:
@@ -109,7 +133,8 @@ with open(sat_positions_jsonl,'r',encoding='utf-8') as f:
 
         line_cnt += 1
         now = datetime.now()
-        print(f'[{now.hour:02d}:{now.minute:02d}:{now.second:02d}] {line_cnt} lines has been read')
+        print(f'\r[{now.hour:02d}:{now.minute:02d}:{now.second:02d}] {line_cnt} lines has been read',end='',flush=True)
+        #time.sleep(2)
 
         if len(batch_slots) == batch_size:
             flush_batch()
@@ -117,25 +142,63 @@ with open(sat_positions_jsonl,'r',encoding='utf-8') as f:
 if batch_slots:
     flush_batch()
 
+print('\n\nsat positions loaded successfully!\n\n')
 
 
-# print("\n\n验证数据...")
-# cursor.execute("SELECT COUNT(*) FROM sat_slots")
-# slot_count = cursor.fetchone()[0]
-# cursor.execute("SELECT COUNT(*) FROM sat_positions")
-# pos_count = cursor.fetchone()[0]
-# print(f"数据库实际记录 - 时隙表: {slot_count} 条, 位置表: {pos_count} 条")
 
-# # 显示示例数据
-# print("\n示例数据（前5个时隙）:")
-# cursor.execute('''
-#     SELECT s.slot_id, s.timestamp, COUNT(p.id) as pos_count
-#     FROM sat_slots s
-#     LEFT JOIN sat_positions p ON s.slot_id = p.slot_id
-#     GROUP BY s.slot_id, s.timestamp
-#     LIMIT 5
-# ''')
-# for row in cursor.fetchall():
-#     print(f"  slot_id={row[0]}, timestamp={row[1]}, 卫星数量={row[2]}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### links
+batch = []
+cnt = 0
+print('loading links...\n')
+with open(links_jsonl,'r',encoding='utf-8') as f:
+    for line in f:
+        line = line.strip()
+        if not line: continue
+        data = json.loads(line)
+        slot_id = data.get('slot_id')
+        timestamp = data.get('timestamp')
+        links = data.get('links')
+        for link in links:
+            state = link.get('state')
+            src = link.get('src')
+            dst = link.get('dst')
+            bandwidth_mbps = link.get('bandwidth_mbps')
+            batch.append((slot_id, timestamp, state, src, dst, bandwidth_mbps))
+        if len(batch) >= batch_size:
+            cursor.executemany('''
+                INSERT INTO links (slot_id, timestamp, state, src, dst, bandwidth_mbps)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', batch)
+            conn.commit()
+            batch = []
+        cnt+=1
+        print(f'\r[{datetime.now().strftime("%H:%M:%S")}] {cnt} lines has been read',end='',flush=True)
+        #time.sleep(2)
+        
+if batch:
+    cursor.executemany('''
+        INSERT INTO links (slot_id, timestamp, state, src, dst, bandwidth_mbps)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', batch)
+    conn.commit()
+
+print('\n\nlinks loaded successfully!\n')
+
+
 
 conn.close()
