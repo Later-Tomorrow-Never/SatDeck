@@ -56,7 +56,7 @@ let positionsData = [];
 async function load_data() {
     try {
         earthLoader.classList.remove('hidden');
-        let response = await fetch(`http://localhost:8000/api/sat_pos?sat_id=${sat_id}`);
+        let response = await fetch(`/api/sat_pos?sat_id=${sat_id}`);
         let result = await response.json();
 
         if (!result.success) {
@@ -65,7 +65,7 @@ async function load_data() {
         }
         positionsData = result.data;
 
-        response = await fetch(`http://localhost:8000/api/network?slot_id=${cur_slot}`);
+        response = await fetch(`/api/network?slot_id=${cur_slot}`);
         result = await response.json();
         if (!result.success) {
             console.error('获取network数据失败:', result.error);

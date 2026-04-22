@@ -509,7 +509,7 @@
          try {
             console.log('=== 开始测试API ===');
 
-            const response = await fetch('http://localhost:8000/api/test');
+            const response = await fetch('/api/test');
 
             console.log('HTTP状态码:', response.status);
             console.log('响应状态:', response.statusText);
@@ -695,7 +695,7 @@
       (async function () {
          try {
             console.log('loading sat list');
-            const response = await fetch('http://localhost:8000/api/sat_list');
+            const response = await fetch('/api/sat_list');
             const result = await response.json();
 
             if (result.success) {
