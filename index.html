@@ -503,6 +503,54 @@
 
    <!-- scripts -->
 
+   <script>
+      // 测试 localhost:8000/api/test 接口
+      async function testAPI() {
+         try {
+            console.log('=== 开始测试API ===');
+
+            const response = await fetch('http://localhost:8000/api/test');
+
+            console.log('HTTP状态码:', response.status);
+            console.log('响应状态:', response.statusText);
+
+            // 获取响应数据
+            const data = await response.json();
+
+            console.log('Python返回的数据:', data);
+
+            if (data.success) {
+               console.log('✅ API调用成功');
+            } else {
+               console.log('❌ API调用失败');
+               console.log('Python返回的错误信息:', data.error);
+            }
+
+            return data;
+
+         } catch (error) {
+            console.log('=== JavaScript层面的错误 ===');
+            console.log('错误类型:', error.name);
+            console.log('错误信息:', error.message);
+            console.log('完整错误对象:', error);
+
+            // 常见的JS错误类型
+            if (error.name === 'TypeError') {
+               console.log('可能原因: 网络问题、CORS、服务器未启动');
+            }
+
+            return { success: false, jsError: error.message };
+         }
+      }
+
+      // 执行测试
+      testAPI().then(result => {
+         console.log('最终结果:', result);
+      });
+   </script>
+
+
+
    <!-- tooltip 显示/隐藏 -->
    <script>
       const tooltip = document.getElementById('tooltip');

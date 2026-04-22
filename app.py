@@ -80,6 +80,23 @@ def serve_index():
 def serve_static(path):
     return send_from_directory('.', path)
 
+@app.route('/api/test')
+def test():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT DISTINCT sat_id, name FROM sat_positions')
+        return jsonify({'success':True})
+    except Exception as e:
+        print(f"错误信息: {e}")  # 打印到控制台
+        import traceback
+        traceback.print_exc()  # 打印完整堆栈
+        return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
+
+
+
+
 
 @app.route('/api/sat_list')
 def get_sat_list():
@@ -95,8 +112,11 @@ def get_sat_list():
                 'success': True,
                 'data': d  # 直接返回一维列表
         })
-    except:
-        return jsonify({'success':False})
+    except Exception as e:
+        print(f"错误信息: {e}")  # 打印到控制台
+        import traceback
+        traceback.print_exc()  # 打印完整堆栈
+        return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
 
 @app.route('/api/sat_pos',methods = ['GET'])
 def get_sat_pos():
