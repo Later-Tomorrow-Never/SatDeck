@@ -3,7 +3,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.m
 export function RenderEarth(scene) {
 
     const bgLoader = new THREE.TextureLoader();
-bgLoader.load("./Earth_Window/Earth_Textures/Skybox.png", texture => {
+bgLoader.load("./earth_window/Earth_Textures/Skybox.png", texture => {
   texture.mapping = THREE.EquirectangularReflectionMapping;
   texture.colorSpace = THREE.SRGBColorSpace;
   scene.background = texture;
@@ -14,12 +14,12 @@ bgLoader.load("./Earth_Window/Earth_Textures/Skybox.png", texture => {
   // Load real GPU cubemap
   // -----------------------------
   const earthCube = new THREE.CubeTextureLoader().load([
-    "./Earth_Window/Faces/px.png",
-    "./Earth_Window/Faces/nx.png",
-    "./Earth_Window/Faces/py.png",
-    "./Earth_Window/Faces/ny.png",
-    "./Earth_Window/Faces/pz.png",
-    "./Earth_Window/Faces/nz.png",
+    "./earth_window/Faces/px.png",
+    "./earth_window/Faces/nx.png",
+    "./earth_window/Faces/py.png",
+    "./earth_window/Faces/ny.png",
+    "./earth_window/Faces/pz.png",
+    "./earth_window/Faces/nz.png",
   ]);
 
 
