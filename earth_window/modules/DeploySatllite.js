@@ -164,7 +164,10 @@ export async function startAnimation() {
     // 立即播放第一帧
     playNext();
     // 设置定时器继续播放后续帧
-    animationInterval = setInterval(playNext, 1000);
+
+    window.speed = document.getElementById('selectSpeed').value;
+
+    animationInterval = setInterval(playNext, 1000/speed);
 }
 
 // 停止动画

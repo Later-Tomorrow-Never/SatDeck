@@ -284,6 +284,15 @@
                         onmouseenter="showTooltip(event,'reset')" onmouseleave="hideTooltip()">
                         <img src="./images/reflesh.png" class="w-5 h-5">
                      </button>
+
+                     <select id="selectSpeed" style="color: white;background-color: black;" class="z-20">
+                        <option disabled>speed</option>
+                        <option value=0.5>0.5x</option>
+                        <option value=1 selected >1.0x</option>
+                        <option value=1.5>1.5x</option>
+                        <option value=2>2.0x</option>
+                     </select>
+
                      <button id="earth-max-btn"
                         class="z-20 w-8 h-8 bg-black/60 text-white rounded-lg hover:bg-black flex items-center justify-center"
                         onmouseenter="showTooltip(event,'scale')" onmouseleave="hideTooltip()">
@@ -738,8 +747,16 @@
 
 
    <script>
+      const selectSpeed = document.getElementById('selectSpeed');
+
+
+
+
+
       document.addEventListener('DOMContentLoaded', () => {
          window.sat_id = null;
+         window.speed = 1;
+
       })
    </script>
 
