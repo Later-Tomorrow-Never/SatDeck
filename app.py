@@ -103,7 +103,13 @@ def get_sat_list():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT DISTINCT sat_id, name FROM sat_positions')
+        #cursor.execute('SELECT DISTINCT sat_id, name FROM sat_positions')
+        cursor.execute('''
+            SELECT sat_id, MIN(name) as name 
+            FROM sat_positions 
+            GROUP BY sat_id
+            ORDER BY sat_id
+        ''')
         d = []
         for row in cursor.fetchall():
             d.append({'sat_id':row[0],'sat_name':row[1]})
@@ -117,6 +123,8 @@ def get_sat_list():
         import traceback
         traceback.print_exc()  # 打印完整堆栈
         return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
+
 
 @app.route('/api/sat_pos',methods = ['GET'])
 def get_sat_pos():
@@ -143,41 +151,138 @@ def get_network():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        slot_id = request.args.get('slot_id',0)
         d = []
-        cursor.execute(f'select * from links where slot_id = {slot_id}')
-        nodes_set = set()
-        edges = []
-        nodes = []
-        for row in cursor.fetchall():
-            link = {
-                'from':row['src'],
-                'to':row['dst'],
-                'rate':row['bandwidth_mbps']
-            }
-            nodes_set.add(row['src'])
-            nodes_set.add(row['dst'])
-            if row['state']=='up': edges.append(link) 
-
-        for node_id in nodes_set:
-            cursor.execute(f'select name from sat_positions where sat_id = {node_id} limit 1')
-            name = cursor.fetchone()
-            nodes.append({'id':node_id,'name':name[0]})
+        _mapping = {}
         
+        cursor.execute('select slot_id from sat_slots order by slot_id')
+        cur2 = conn.cursor()
+        cur3 = conn.cursor()
+        for ro in cursor.fetchall():
+            nodes_set = set()
+            edges = []
+            nodes = []
+            slot_id = ro['slot_id']
+            cur2.execute(f'select * from links where slot_id = {slot_id}')
+            for row in cur2.fetchall():
+                link = {
+                    'from':row['src'],
+                    'to':row['dst'],
+                    'rate':row['bandwidth_mbps']
+                }
+                nodes_set.add(row['src'])
+                nodes_set.add(row['dst'])
+                
+                if row['state']=='up': 
+                    edges.append(link) 
+            for node_id in nodes_set:
+                if node_id not in _mapping:
+                    cur3.execute(f'select name from sat_positions where sat_id = {node_id} limit 1')
+                    _mapping[node_id] = cur3.fetchone()[0]
+                nodes.append({
+                    'id':node_id,
+                    'name':_mapping[node_id]
+                })
+            
+            d.append({
+                'nodes':nodes,
+                'edges':edges
+            })
+            
+
+
+
+
 
 
         conn.close()
 
         return jsonify({
             'success':True,
-            'nodes':nodes,
-            'edges':edges
+            'data':d
         })
     except Exception as e:
         print(f"错误信息: {e}")  # 打印到控制台
         import traceback
         traceback.print_exc()  # 打印完整堆栈
         return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
+
+@app.route('/api/data',methods = ['GET'])
+def get_data():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cur2 = conn.cursor()
+        sat_id = request.args.get('sat_id',type=int)
+        data = []
+        cursor.execute('select slot_id,timestamp from sat_slots order by slot_id')
+        for ro in cursor.fetchall():
+            slot_id = ro['slot_id']
+            time = ro['timestamp']
+            nodes = {}
+            nodes['neibours'] = []
+            edges = []
+            nodeSet = set()
+            #nodeSet.add(sat_id)
+            cur2.execute(f'select * from links where slot_id = {slot_id}')
+            for row in cur2.fetchall():
+                if row['state']!='up': 
+                    continue
+                link = {
+                    'from':row['src'],
+                    'to':row['dst'],
+                    'rate':row['bandwidth_mbps']
+                }
+                if link['from']==sat_id:
+                    nodeSet.add(link['to'])
+                    edges.append(link)
+                if link['to']==sat_id:
+                    nodeSet.add(link['from'])
+                    edges.append(link)
+            cur2.execute(f'select name,eci_x,eci_y,eci_z from sat_positions where slot_id = {slot_id} and sat_id = {sat_id} limit 1')
+            res = cur2.fetchone()
+            if res is None: continue
+            nodes['self'] = {
+                'sat_id':sat_id,
+                'name':res[0],
+                'eci_x':res[1],
+                'eci_y':res[2],
+                'eci_z':res[3]
+            }
+            for id in nodeSet:
+                cur2.execute(f'select name,eci_x,eci_y,eci_z from sat_positions where slot_id = {slot_id} and sat_id = {id} limit 1')
+                res = cur2.fetchone()
+                nodes['neibours'].append({
+                    'sat_id':id,
+                    'name':res[0],
+                    'eci_x':res[1],
+                    'eci_y':res[2],
+                    'eci_z':res[3]
+                })
+            data.append({
+                'slot_id':slot_id,
+                'time':time,
+                #'nodeSet':list(nodeSet),
+                'nodes':nodes,
+                'edges':edges
+            })
+
+
+        return {
+            'success':True,
+            'data':data
+        }
+    except Exception as e:
+        print(f"错误信息: {e}")  # 打印到控制台
+        import traceback
+        traceback.print_exc()  # 打印完整堆栈
+        return jsonify({'success':False, 'error':str(e)})  # 返回具体错误
+
+
+
+
+
+
 
 
 if __name__ == '__main__':

@@ -2,15 +2,28 @@ import sqlite3
 import json
 import os
 from datetime import datetime
-import time
 
 ##################  检测下面的路径  ######################
-#sat_positions_jsonl = './data/sample_sat_positions.jsonl'
+# sat_positions_jsonl = './data/sample_sat_positions.jsonl'
+# links_jsonl = './data/sample_slots_full.jsonl'
+
 sat_positions_jsonl = './data/sat_positions.jsonl'
-#links_jsonl = './data/sample_slots_full.jsonl'
 links_jsonl = './data/slots_full.jsonl'
 
 
+
+
+
+
+if os.path.exists('./data.db'):
+    print("should delete ./data.db first")
+    exit()
+if not os.path.exists(sat_positions_jsonl):
+    print(f'{sat_positions_jsonl} not found')
+    exit()
+if not os.path.exists(links_jsonl):
+    print(f'{links_jsonl} not found')
+    exit()
 
 
 conn = sqlite3.connect('data.db')
@@ -43,10 +56,6 @@ cursor.execute('''
 ''')
 
 
-
-
-
-
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS links (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,9 +72,16 @@ cursor.execute('''
 # 3. 创建索引
 # 索引的作用：加速 WHERE 条件查询，例如 WHERE slot_id = 5 会非常快。
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_slot_id ON sat_slots(slot_id)')
+
+
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_pos_slot_id ON sat_positions(slot_id)')
 cursor.execute('CREATE INDEX IF NOT EXISTS idx_sat_id ON sat_positions(sat_id)')
+cursor.execute('CREATE INDEX IF NOT EXISTS idx_sat_positions_slot_sat ON sat_positions(slot_id, sat_id)')
+
+
 cursor.execute("CREATE INDEX IF NOT EXISTS idx_slot_time ON links(slot_id)")
+cursor.execute('CREATE INDEX IF NOT EXISTS idx_links_slot_id_state ON links(slot_id, state)')
+cursor.execute('CREATE INDEX IF NOT EXISTS idx_links_src_dst ON links(src, dst)')
 
 conn.commit()
 
